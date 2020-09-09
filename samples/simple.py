@@ -3,13 +3,13 @@ import numpy as np
 from bumperboats.boat import Boat
 from bumperboats.controller import FixedController
 from bumperboats.physics import SimpleEngine
-from bumperboats.sensors import SimpleSensor
+from bumperboats.sensors import SimplePositionSensor
 from bumperboats.track import SimplePositionKFTrack
 from bumperboats.viewer import PlotViewer
 
 track = SimplePositionKFTrack(dt=1, std=3)
 engine = SimpleEngine()
-sensor = SimpleSensor(engine, std=3, period=1)
+sensor = SimplePositionSensor(engine, std=3, period=1)
 sensor.add_destination(track)
 viewer = PlotViewer(engine, sensor, track)
 

@@ -18,7 +18,7 @@ class SimplePositionKFTrack:
         ])
 
         # Process noise
-        q = filterpy.common.Q_discrete_white_noise(dim=2, dt=dt, var=0.5)
+        q = filterpy.common.Q_discrete_white_noise(dim=2, dt=dt, var=0.1)
         kf.Q = block_diag(q, q)
 
         # measurement matrix state -> measurement space
@@ -34,7 +34,7 @@ class SimplePositionKFTrack:
         self.kf.P = np.eye(4) * 500.
 
         # Measurement noise
-        self.kf.R = np.eye(2).dot(std)
+        self.kf.R = np.eye(2).dot(std*std)
 
     def on_data(self, z_measurement):
         self.kf.predict()

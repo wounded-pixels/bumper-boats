@@ -25,10 +25,7 @@ class SimpleEngine:
                 resistance_magnitude = -1 * math.pi * boat.radius * speed * self.resistance_coefficient
                 resistance_acceleration = resistance_magnitude * direction
 
-            thrust_radians = (boat.heading + controller.thrust_angle) * (math.pi / 180)
-            thrust_direction = np.array([math.cos(thrust_radians), math.sin(thrust_radians)])
-            thrust_acceleration = controller.thrust * thrust_direction
-
+            thrust_acceleration = controller.calculate_thrust_acceleration(boat)
             boat.acceleration = thrust_acceleration + resistance_acceleration
             boat.tick(dt)
 
