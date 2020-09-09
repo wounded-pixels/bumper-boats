@@ -1,21 +1,23 @@
-import math
-from ipycanvas import Canvas
+from matplotlib.pyplot import plot
+from matplotlib import pyplot as plt
 
 
-class CanvasViewer:
-    def __init__(self, engine, sensor, canvas):
+class PlotViewer:
+    def __init__(self, engine, sensor, track):
         self.engine = engine
         self.sensor = sensor
-        self.canvas = canvas
-        self.canvas.stroke_style = 'black'
-        self.canvas.stroke_rect(0,0, self.canvas.width, self.canvas.height)
+        self.track = track
 
     def tick(self):
-        self.canvas.stroke_style = 'blue'
         for boat, _ in self.engine.boats:
-            self.canvas.stroke_arc(boat.position[0], boat.position[1], boat.radius, 0, 2 * math.pi)
+            plot(boat.position[0], boat.position[1], '.', c='blue')
 
-        self.canvas.stroke_style = 'red'
         for contact in self.sensor.contacts:
-            self.canvas.stroke_arc(contact[0], contact[1], 1, 0, 2 * math.pi)
+            plot(contact[0], contact[1], '.', c='red')
 
+        x = self.track.get_position_estimate()
+        plot(x[0], x[1], '.', c='green')
+
+    @staticmethod
+    def show():
+        plt.show()

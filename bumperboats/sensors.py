@@ -5,8 +5,12 @@ class SimpleSensor:
         self.engine = engine
         self.std = std
         self.period = period
+        self.destinations = []
         self.elapsed = 0
         self.contacts = []
+
+    def add_destination(self, destination):
+        self.destinations.append(destination)
 
     def noise(self):
         return np.array(np.random.normal(0, self.std, 2))
@@ -16,4 +20,5 @@ class SimpleSensor:
         if (self.elapsed >= self.period):
             self.elapsed = 0
             self.contacts = [np.array([boat.position[0], boat.position[1]]) + self.noise() for boat, controller in self.engine.boats]
-
+            for destination in self.destinations:
+                destination.on_data(self.contacts)
