@@ -8,7 +8,8 @@ def vector_norm(vec):
 
 
 class SimpleEngine:
-    def __init__(self):
+    def __init__(self, resistance_coefficient=0.0314):
+        self.resistance_coefficient = resistance_coefficient
         self.boats = []
 
     def __repr__(self):
@@ -21,7 +22,7 @@ class SimpleEngine:
             resistance_acceleration = np.array([0, 0])
             if speed > 0.0001:
                 direction = boat.velocity / speed
-                resistance_magnitude = -1 * math.pi * boat.radius * speed * 0.0314
+                resistance_magnitude = -1 * math.pi * boat.radius * speed * self.resistance_coefficient
                 resistance_acceleration = resistance_magnitude * direction
 
             thrust_radians = (boat.heading + controller.thrust_angle) * (math.pi / 180)
