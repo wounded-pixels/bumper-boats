@@ -18,7 +18,7 @@ class SimpleEngine:
         for boat, controller in self.boats:
             speed = vector_norm(boat.velocity)
 
-            resistance_acceleration = np.array([0,0])
+            resistance_acceleration = np.array([0, 0])
             if speed > 0.0001:
                 direction = boat.velocity / speed
                 resistance_magnitude = -1 * math.pi * boat.radius * speed * 0.0314
@@ -29,7 +29,6 @@ class SimpleEngine:
             thrust_acceleration = controller.thrust * thrust_direction
 
             boat.acceleration = thrust_acceleration + resistance_acceleration
-
             boat.tick(dt)
 
     def add_boat(self, boat, controller):

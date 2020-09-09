@@ -15,5 +15,5 @@ class Boat:
         self.position = self.position + self.velocity * dt + 0.5 * dt * dt * self.acceleration
         self.velocity = self.velocity + self.acceleration * dt
         if abs(self.velocity[0]) > 0.0000000001:
-            self.heading = math.atan(self.velocity[1] / self.velocity[0]) * (180 / math.pi)
+            self.heading = math.atan2(self.velocity[1], self.velocity[0]) * (180 / math.pi)
 
