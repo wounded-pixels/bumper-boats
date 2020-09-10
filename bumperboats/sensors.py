@@ -20,7 +20,7 @@ class SimplePositionSensor:
         self.elapsed += dt
         if self.elapsed >= self.period:
             self.elapsed = 0
-            self.contacts = [np.array([boat.position[0], boat.position[1]]) + self.noise() for boat, controller in
+            self.contacts = [(np.array([boat.position[0], boat.position[1]]) + self.noise(), boat.id) for boat, controller in
                              self.engine.boats]
             for destination in self.destinations:
                 destination.on_data(self.contacts)
