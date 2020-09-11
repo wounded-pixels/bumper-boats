@@ -1,3 +1,4 @@
+import math
 from matplotlib import pyplot as plt
 
 
@@ -13,8 +14,8 @@ class PlotViewer:
         self.measurements_x_map = {}
         self.measurements_y_map = {}
 
-        self.estimates_x = []
-        self.estimates_y = []
+        self.estimates_x_map = {}
+        self.estimates_y_map = {}
 
         self.measurement_residuals_map = {}
         self.estimate_residuals_map = {}
@@ -36,8 +37,11 @@ class PlotViewer:
 
         for track_id, track in self.associator.track_map.items():
             pe = track.get_position_estimate()
-            self.estimates_x.append(pe[0])
-            self.estimates_y.append(pe[1])
+
+            estimates_x = self.estimates_x_map.setdefault(track_id, [])
+            estimates_y = self.estimates_y_map.setdefault(track_id, [])
+            estimates_x.append(pe[0])
+            estimates_y.append(pe[1])
 
     def show(self):
         for value_id in self.values_x_map.keys():
@@ -45,10 +49,17 @@ class PlotViewer:
             ys = self.values_y_map[value_id]
             mxs = self.measurements_x_map[value_id]
             mys = self.measurements_y_map[value_id]
+            exs = self.estimates_x_map[value_id]
+            eys = self.estimates_y_map[value_id]
+
+            measurement_residuals = [math.sqrt((mx-x)**2 + (my-y)**2) for mx, my, x, y in zip(mxs, mys, xs, ys)]
+            estimation_residuals = [math.sqrt((ex-x)**2 + (ey-y)**2) for ex, ey, x, y in zip(exs, eys, xs, ys)]
 
             self.position_ax.plot(xs, ys, c='blue')
             self.position_ax.plot(mxs, mys, '.', c='red')
+            self.position_ax.plot(exs, eys, '.', c='green')
 
-        self.position_ax.plot(self.estimates_x, self.estimates_y, '.', c='green')
+            self.residual_ax.plot(measurement_residuals, '.', c='red')
+            self.residual_ax.plot(estimation_residuals, '.', c='green')
 
         plt.show()
