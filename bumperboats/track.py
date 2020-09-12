@@ -18,7 +18,7 @@ class SimpleFirstOrderKFTrack:
         ])
 
         # Process noise
-        q = filterpy.common.Q_discrete_white_noise(dim=2, dt=dt, var=0.1)
+        q = filterpy.common.Q_discrete_white_noise(dim=2, dt=dt, var=1.5)
         self.kf.Q = block_diag(q, q)
 
         # measurement matrix state -> measurement space
@@ -62,7 +62,7 @@ class SimpleSecondOrderKFTrack:
         ])
 
         # Process noise
-        q = filterpy.common.Q_discrete_white_noise(dim=3, dt=dt, var=0.1)
+        q = filterpy.common.Q_discrete_white_noise(dim=3, dt=dt, var=1.5)
         self.kf.Q = block_diag(q, q)
 
         # measurement matrix state -> measurement space

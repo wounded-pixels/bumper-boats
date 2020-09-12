@@ -52,14 +52,19 @@ class PlotViewer:
             exs = self.estimates_x_map[value_id]
             eys = self.estimates_y_map[value_id]
 
-            measurement_residuals = [math.sqrt((mx-x)**2 + (my-y)**2) for mx, my, x, y in zip(mxs, mys, xs, ys)]
-            estimation_residuals = [math.sqrt((ex-x)**2 + (ey-y)**2) for ex, ey, x, y in zip(exs, eys, xs, ys)]
+            measurement_residuals_xs = [mx-x for mx, x in zip(mxs, xs)]
+            measurement_residuals_ys = [my-y for my, y in zip(mys, ys)]
+            estimation_residuals_xs = [ex-x for ex, x in zip(exs, xs)]
+            estimation_residuals_ys = [ey-y for ey, y in zip(eys, ys)]
 
             self.position_ax.plot(xs, ys, c='blue')
             self.position_ax.plot(mxs, mys, '.', c='red')
             self.position_ax.plot(exs, eys, '.', c='green')
 
-            self.residual_ax.plot(measurement_residuals, '.', c='red')
-            self.residual_ax.plot(estimation_residuals, '.', c='green')
+            self.residual_ax.plot(measurement_residuals_xs, measurement_residuals_ys, '.', c='red')
+            self.residual_ax.plot(estimation_residuals_xs, estimation_residuals_ys, '.', c='green')
 
+        radius = 8
+        self.residual_ax.hlines([0], xmin=-radius, xmax=radius)
+        self.residual_ax.vlines([0], ymin=-radius, ymax=radius)
         plt.show()
