@@ -4,51 +4,14 @@ from scipy.linalg import block_diag
 from filterpy.kalman import KalmanFilter
 import filterpy.common
 
-
-class SimpleFirstOrderKFTrack:
-    def __init__(self, dt, std):
-        self.kf = KalmanFilter(dim_x=4, dim_z=2)
-
-        # state transition function
-        self.kf.F = np.array([
-            [1, dt, 0, 0],
-            [0,  1, 0, 0],
-            [0,  0, 1, dt],
-            [0,  0, 0, 1],
-        ])
-
-        # Process noise
-        q = filterpy.common.Q_discrete_white_noise(dim=2, dt=dt, var=1.5)
-        self.kf.Q = block_diag(q, q)
-
-        # measurement matrix state -> measurement space
-        self.kf.H = np.array([
-            [1, 0, 0, 0],
-            [0, 0, 1, 0]
-        ])
-
-        # initial state
-        self.kf.x = np.array([[0, 0, 0, 0]]).T
-
-        # initial covariance matrix - weak flat prior
-        self.kf.P = np.eye(4) * 500.
-
-        # Measurement noise
-        self.kf.R = np.eye(2).dot(std*std)
-
-    def on_data(self, z_measurement):
-        self.kf.predict()
-        self.kf.update(z_measurement)
-
-    def get_position_estimate(self):
-        return self.kf.H.dot(self.kf.x)
-
-    def print_diagnostics(self):
-        print('kf\n', self.kf)
+from bumperboats.snapshot import Snapshot
 
 
 class SimpleSecondOrderKFTrack:
-    def __init__(self, dt, std):
+    def __init__(self, contact, dt, std):
+        self.contact = contact
+        self.snapshots = []
+
         self.kf = KalmanFilter(dim_x=6, dim_z=2)
 
         # state transition function
@@ -72,7 +35,7 @@ class SimpleSecondOrderKFTrack:
         ])
 
         # initial state
-        self.kf.x = np.array([[0, 0, 0, 0, 0, 0]]).T
+        self.kf.x = np.array([[contact.measurement[0], 0, 0, contact.measurement[1], 0, 0]]).T
 
         # initial covariance matrix - weak flat prior
         self.kf.P = np.eye(6) * 500.
@@ -80,12 +43,21 @@ class SimpleSecondOrderKFTrack:
         # Measurement noise
         self.kf.R = np.eye(2).dot(std*std)
 
-    def on_data(self, z_measurement):
+    def predict(self):
         self.kf.predict()
-        self.kf.update(z_measurement)
 
-    def get_position_estimate(self):
-        return self.kf.H.dot(self.kf.x)
+    def on_data(self, contact):
+        self.contact = contact
+        self.kf.update(contact.measurement)
+        self.snapshots.append(Snapshot(state=self.kf.x,
+                                       estimate=self.kf.H.dot(self.kf.x),
+                                       measurement=self.contact.measurement,
+                                       actual=self.contact.actual,
+                                       actual_id=self.contact.actual_id)
+                              )
+
+    def get_snapshots(self):
+        return self.snapshots
 
     def print_diagnostics(self):
-        print('kf\n', self.kf)
+        print('kf\n', self.kf.log_likelihood)

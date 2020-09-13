@@ -4,10 +4,12 @@ from bumperboats.contact import Contact
 
 
 class SimplePositionSensor:
-    def __init__(self, engine, std, period):
+    def __init__(self, engine, std, period, min_value=0, max_value=500):
         self.engine = engine
         self.std = std
         self.period = period
+        self.min_value = min_value
+        self.max_value = max_value
         self.destinations = []
         self.elapsed = 0
         self.contacts = []
@@ -22,7 +24,16 @@ class SimplePositionSensor:
         self.elapsed += dt
         if self.elapsed >= self.period:
             self.elapsed = 0
-            self.contacts = [Contact(measurement=np.array([boat.position[0], boat.position[1]]) + self.noise(), actual_id=boat.id) for boat, controller in
-                             self.engine.boats]
+            self.contacts = [
+                Contact(measurement=np.array([boat.position[0], boat.position[1]]) + self.noise(),
+                        actual=np.array([boat.position[0], boat.position[1]]),
+                        actual_id=boat.id)
+                for boat, controller in self.engine.boats
+                if boat.position[0] > self.min_value and
+                boat.position[1] > self.min_value and
+                boat.position[0] < self.max_value and
+                boat.position[1] < self.max_value
+            ]
+
             for destination in self.destinations:
                 destination.on_data(self.contacts)
