@@ -1,5 +1,7 @@
 import numpy as np
 
+from bumperboats.contact import Contact
+
 
 class SimplePositionSensor:
     def __init__(self, engine, std, period):
@@ -20,7 +22,7 @@ class SimplePositionSensor:
         self.elapsed += dt
         if self.elapsed >= self.period:
             self.elapsed = 0
-            self.contacts = [(np.array([boat.position[0], boat.position[1]]) + self.noise(), boat.id) for boat, controller in
+            self.contacts = [Contact(measurement=np.array([boat.position[0], boat.position[1]]) + self.noise(), actual_id=boat.id) for boat, controller in
                              self.engine.boats]
             for destination in self.destinations:
                 destination.on_data(self.contacts)

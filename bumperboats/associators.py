@@ -6,9 +6,9 @@ class FakeAssociator:
         self.track_map = {}
 
     def on_data(self, contacts):
-        for position, actual_id in contacts:
-            track = self.track_map.setdefault(actual_id, SimpleSecondOrderKFTrack(dt=1, std=3))
-            track.on_data(position)
+        for contact in contacts:
+            track = self.track_map.setdefault(contact.actual_id, SimpleSecondOrderKFTrack(dt=1, std=3))
+            track.on_data(contact.measurement)
 
 
     def print_diagnostics(self):
