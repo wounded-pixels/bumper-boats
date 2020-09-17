@@ -4,7 +4,7 @@ from bumperboats.contact import Contact
 
 
 class SimplePositionSensor:
-    def __init__(self, engine, std, period, min_value=0, max_value=500):
+    def __init__(self, engine, std, period, min_value=0, max_value=600):
         self.engine = engine
         self.std = std
         self.period = period

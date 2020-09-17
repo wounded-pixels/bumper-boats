@@ -2,10 +2,11 @@ import math
 
 from itertools import count
 
+
 class Boat:
     _ids = count(0)
 
-    def __init__(self, position, heading, velocity, acceleration, radius = 1):
+    def __init__(self, position, heading, velocity, acceleration, radius=1):
         self.position = position
         self.heading = heading
         self.velocity = velocity
@@ -21,4 +22,3 @@ class Boat:
         self.velocity = self.velocity + self.acceleration * dt
         if abs(self.velocity[0]) > 0.0000000001:
             self.heading = math.atan2(self.velocity[1], self.velocity[0]) * (180 / math.pi)
-

@@ -44,19 +44,22 @@ class SimpleAssociator:
             track.predict()
 
         for contact in contacts:
-            match = False
             print('contact tracks ', len(old_tracks))
+            best_track = None
             for track in deepcopy(old_tracks):
                 track.on_data(contact)
                 distance = np.linalg.norm(track.kf.y)
-                if track.kf.mahalanobis < 3:
-                    self.tracks.append(track)
-                    print('Accept mahalanois', track.kf.mahalanobis, 'distance ', distance)
-                    match = True
+                if track.kf.mahalanobis < 4:
+                    print('Tentative mahalanois', track.kf.mahalanobis, 'distance ', distance)
+                    if best_track is None or best_track.kf.mahalanobis > track.kf.mahalanobis:
+                        best_track = track
                 else:
                     print('reject mahalanois', track.kf.mahalanobis, 'distance ', distance)
 
-            if not match:
+            if best_track:
+                print('Accept mahalanois', best_track.kf.mahalanobis)
+                self.tracks.append(best_track)
+            else:
                 self.tracks.append(SimpleSecondOrderKFTrack(contact, dt=1, std=3))
 
     def get_tracks(self):
