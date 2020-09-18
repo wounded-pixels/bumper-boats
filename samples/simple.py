@@ -1,6 +1,6 @@
 import numpy as np
 
-from bumperboats.associators import SimpleAssociator
+from bumperboats.associators import SimpleAssociator, FakeAssociator
 from bumperboats.boat import Boat
 from bumperboats.controllers import FixedController, OscillatingController
 from bumperboats.physics import SimpleEngine
@@ -8,6 +8,7 @@ from bumperboats.sensors import SimplePositionSensor
 from bumperboats.viewer import PlotViewer
 
 dt = 0.5
+fake_associator = FakeAssociator()
 associator = SimpleAssociator()
 engine = SimpleEngine()
 sensor = SimplePositionSensor(engine, std=3, period=1)
@@ -33,6 +34,7 @@ engine.add_boat(boat, controller)
 for ctr in range(300):
     engine.tick(dt)
     sensor.tick(dt)
-    if ctr > 0 and ctr % 25 == 0:
+    if ctr > 0 and ctr % 20 == 0:
         viewer.show()
-        associator.print_diagnostics()
+
+associator.print_diagnostics()

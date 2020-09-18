@@ -1,7 +1,6 @@
 import numpy as np
 from copy import deepcopy
 
-from bumperboats import track
 from bumperboats.track import SimpleSecondOrderKFTrack
 
 
@@ -32,42 +31,60 @@ class SimpleAssociator:
 
     def on_data(self, contacts):
         self.prune_ctr += 1
-        if self.prune_ctr > 5:
+        if self.prune_ctr > 1:
             self.prune_ctr = 0
             self.prune()
 
         old_tracks = self.tracks
-
         self.tracks = []
 
-        for track in old_tracks:
-            track.predict()
+        for old_track in old_tracks:
+            old_track.predict()
 
         for contact in contacts:
-            print('contact tracks ', len(old_tracks))
-            best_track = None
+            matches = []
+            best_residual_norm = 10000
             for track in deepcopy(old_tracks):
                 track.on_data(contact)
-                distance = np.linalg.norm(track.kf.y)
-                if track.kf.mahalanobis < 4:
-                    print('Tentative mahalanois', track.kf.mahalanobis, 'distance ', distance)
-                    if best_track is None or best_track.kf.mahalanobis > track.kf.mahalanobis:
-                        best_track = track
-                else:
-                    print('reject mahalanois', track.kf.mahalanobis, 'distance ', distance)
+                residual_norm = np.linalg.norm(track.kf.y)
+                matches.append(track)
+                best_residual_norm = min(best_residual_norm, residual_norm)
 
-            if best_track:
-                print('Accept mahalanois', best_track.kf.mahalanobis)
-                self.tracks.append(best_track)
+            if len(matches) > 0 and best_residual_norm < 200:
+                for match in matches:
+                    if np.linalg.norm(match.kf.y) < best_residual_norm * 2.0:
+                        self.tracks.append(match)
             else:
                 self.tracks.append(SimpleSecondOrderKFTrack(contact, dt=1, std=3))
+
+        print('len(contacts', len(contacts), 'len(self.tracks)', len(self.tracks))
 
     def get_tracks(self):
         return self.tracks
 
     def prune(self):
         old_tracks = self.tracks
-        self.tracks = [track for track in old_tracks if track.kf.log_likelihood > -10]
+        self.tracks = []
+
+        for old_track in old_tracks:
+            keep = True
+            for snapshot in old_track.snapshots:
+                if snapshot.mahalanobis > 10:
+                    keep = False
+                    print('knock out mahalanobis ', snapshot.mahalanobis)
+
+            bad_count = 0
+            for index, snapshot in enumerate(old_track.snapshots):
+                if index > 1 and snapshot.log_likelihood < -10:
+                    bad_count += 1
+
+            bad_count_ratio = bad_count/len(old_track.snapshots)
+            if len(old_track.snapshots) > 8 and bad_count_ratio > 0.05:
+                print('knockout bad_count_ratio', bad_count_ratio)
+                keep = False
+
+            if keep:
+                self.tracks.append(old_track)
 
     def print_diagnostics(self):
         print('track count', len(self.tracks))

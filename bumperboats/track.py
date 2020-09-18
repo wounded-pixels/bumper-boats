@@ -43,6 +43,16 @@ class SimpleSecondOrderKFTrack:
         # Measurement noise
         self.kf.R = np.eye(2).dot(std*std)
 
+        self.snapshots.append(Snapshot(state=self.kf.x,
+                                       estimate=self.kf.H.dot(self.kf.x),
+                                       measurement=self.contact.measurement,
+                                       residual=self.kf.y,
+                                       mahalanobis=self.kf.mahalanobis,
+                                       log_likelihood=self.kf.log_likelihood,
+                                       actual=self.contact.actual,
+                                       actual_id=self.contact.actual_id)
+                              )
+
     def predict(self):
         self.kf.predict()
 
@@ -52,6 +62,9 @@ class SimpleSecondOrderKFTrack:
         self.snapshots.append(Snapshot(state=self.kf.x,
                                        estimate=self.kf.H.dot(self.kf.x),
                                        measurement=self.contact.measurement,
+                                       residual=self.kf.y,
+                                       mahalanobis=self.kf.mahalanobis,
+                                       log_likelihood=self.kf.log_likelihood,
                                        actual=self.contact.actual,
                                        actual_id=self.contact.actual_id)
                               )

@@ -22,7 +22,6 @@ class OscillatingController:
 
     def calculate_thrust_acceleration(self, boat):
         self.thrust_angle += self.increment
-        print('thrust_angle', self.thrust_angle)
 
         if abs(self.thrust_angle) > self.max_thrust_angle:
             self.increment *= -1

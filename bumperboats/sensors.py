@@ -29,11 +29,9 @@ class SimplePositionSensor:
                         actual=np.array([boat.position[0], boat.position[1]]),
                         actual_id=boat.id)
                 for boat, controller in self.engine.boats
-                if boat.position[0] > self.min_value and
-                boat.position[1] > self.min_value and
-                boat.position[0] < self.max_value and
-                boat.position[1] < self.max_value
+                if self.min_value < boat.position[0] < self.max_value and
+                   self.min_value < boat.position[1] < self.max_value
             ]
 
             for destination in self.destinations:
-                destination.on_data(self.contacts)
+                destination.on_data(contacts=self.contacts)
