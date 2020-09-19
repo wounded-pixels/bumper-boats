@@ -9,7 +9,7 @@ class PlotViewer:
 
         self.fig, (self.position_ax, self.residual_ax) = plt.subplots(2, 1, figsize=(12, 12))
 
-    def show(self):
+    def show(self, title=''):
         for track in self.associator.get_tracks():
             xs = []
             ys = []
@@ -45,6 +45,7 @@ class PlotViewer:
         radius = 8
         self.residual_ax.hlines([0], xmin=-radius, xmax=radius)
         self.residual_ax.vlines([0], ymin=-radius, ymax=radius)
+        plt.title(title)
         plt.show()
 
         self.fig, (self.position_ax, self.residual_ax) = plt.subplots(2, 1, figsize=(12, 12))

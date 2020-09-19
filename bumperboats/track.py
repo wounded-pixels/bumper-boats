@@ -74,3 +74,18 @@ class SimpleSecondOrderKFTrack:
 
     def print_diagnostics(self):
         print('kf\n', self.kf.log_likelihood)
+
+    def actual_ids(self):
+        return ','.join([str(snapshot.actual_id) for snapshot in self.snapshots])
+
+    def velocity(self):
+        return np.array([self.kf.x[1], self.kf.x[4]])
+
+    def velocity_norm(self):
+        return np.linalg.norm(self.velocity())
+
+    def acceleration(self):
+        return np.array([self.kf.x[2], self.kf.x[5]])
+
+    def acceleration_norm(self):
+        return np.linalg.norm(self.acceleration())

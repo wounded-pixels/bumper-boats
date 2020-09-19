@@ -9,7 +9,7 @@ from bumperboats.viewer import PlotViewer
 
 dt = 0.5
 fake_associator = FakeAssociator()
-associator = SimpleAssociator()
+associator = SimpleAssociator(max_velocity=16., max_acceleration=6.)
 engine = SimpleEngine()
 sensor = SimplePositionSensor(engine, std=3, period=1)
 sensor.add_destination(associator)
@@ -31,10 +31,11 @@ boat = Boat(np.array([50., 215.]), 0., np.array([0.5, 0.]), np.array([0.5, 0.]))
 controller = OscillatingController(thrust=0.3, thrust_angle=-15.)
 engine.add_boat(boat, controller)
 
-for ctr in range(300):
+max_steps = 180
+for ctr in range(max_steps):
     engine.tick(dt)
     sensor.tick(dt)
-    if ctr > 0 and ctr % 20 == 0:
-        viewer.show()
+    if ctr > 0 and ctr % 20 == 0 or ctr == max_steps-1:
+        associator.prune()
+        viewer.show(title='ctr: '+str(ctr))
 
-associator.print_diagnostics()
