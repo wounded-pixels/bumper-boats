@@ -4,12 +4,18 @@ from scipy.linalg import block_diag
 from filterpy.kalman import KalmanFilter
 import filterpy.common
 
+from bumperboats.physics import vector_norm, degrees_between
 from bumperboats.snapshot import Snapshot
 
 
 class SimpleSecondOrderKFTrack:
-    def __init__(self, contact, dt, std):
+    def __init__(self, contact, dt, std, max_velocity, max_acceleration, max_bearing_change):
         self.contact = contact
+        self.dt = dt
+        self.max_velocity = max_velocity
+        self.max_acceleration = max_acceleration
+        self.max_bearing_change = max_bearing_change
+
         self.snapshots = []
 
         self.kf = KalmanFilter(dim_x=6, dim_z=2)
@@ -78,14 +84,57 @@ class SimpleSecondOrderKFTrack:
     def actual_ids(self):
         return ','.join([str(snapshot.actual_id) for snapshot in self.snapshots])
 
+    def actually_consistent(self):
+        ids = [snapshot.actual_id for snapshot in self.snapshots]
+        return np.amin(ids) == np.amax(ids)
+
+    def position(self):
+        return self.snapshots[-1].estimate.T[0]
+
+    def prior_position(self):
+        return self.snapshots[-2].estimate.T[0]
+
+    def prior_prior_position(self):
+        return self.snapshots[-3].estimate.T[0]
+
     def velocity(self):
-        return np.array([self.kf.x[1], self.kf.x[4]])
+        if len(self.snapshots) > 1:
+            return (self.position() - self.prior_position()) / (self.dt * 2)
+        else:
+            return np.array([0.,0.])
+
+    def prior_velocity(self):
+        if len(self.snapshots) > 2:
+            return (self.prior_position() - self.prior_prior_position()) / (self.dt * 2)
+        else:
+            return np.array([0.,0.])
 
     def velocity_norm(self):
-        return np.linalg.norm(self.velocity())
+        return vector_norm(self.velocity())
 
     def acceleration(self):
-        return np.array([self.kf.x[2], self.kf.x[5]])
+        return np.array([self.kf.x[2][0], self.kf.x[5][0]])
 
     def acceleration_norm(self):
-        return np.linalg.norm(self.acceleration())
+        return vector_norm(self.acceleration())
+
+    def bearing_change(self):
+        return degrees_between(self.velocity(), self.prior_velocity())
+
+    def is_maneuver_possible(self):
+        if self.velocity_norm() > self.max_velocity:
+            if self.actually_consistent():
+                print('rejecting velocity', self.velocity_norm(), '>', self.max_velocity, self.actual_ids())
+            return False
+
+        if self.acceleration_norm() > self.max_acceleration:
+            if self.actually_consistent():
+                print('rejecting acceleration', self.acceleration_norm(), '>', self.max_acceleration, self.actual_ids())
+            return False
+
+        if abs(self.bearing_change()) > self.max_bearing_change:
+            if self.actually_consistent():
+                print('rejecting bearing', self.bearing_change(), '>', self.max_bearing_change, 'position', self.position(), 'prior_position', self.prior_position(), 'velocity', self.velocity(), 'prior_velocity', self.prior_velocity(), self.actual_ids())
+            return False
+
+        return True

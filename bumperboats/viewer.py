@@ -37,7 +37,7 @@ class PlotViewer:
 
             self.position_ax.plot(xs, ys, c='blue')
             self.position_ax.plot(mxs, mys, '.', c='red')
-            self.position_ax.plot(exs, eys, '.', c='green')
+            self.position_ax.plot(exs, eys, c='green')
 
             self.residual_ax.plot(mr_xs, mr_ys, '.', c='red')
             self.residual_ax.plot(er_xs, er_ys, '.', c='green')

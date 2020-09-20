@@ -3,8 +3,23 @@ import math
 import numpy as np
 
 
-def vector_norm(vec):
-    return np.linalg.norm(vec, ord=1)
+def vector_norm(vector):
+    return np.linalg.norm(vector, ord=1)
+
+
+def unit_vector(vector):
+    return vector / vector_norm(vector)
+
+
+def degrees_between(vector1, vector2):
+    if np.isclose(vector1, vector2).all():
+        return 0
+
+    unit_vector1 = unit_vector(vector1)
+    unit_vector2 = unit_vector(vector2)
+    cos_angle = np.dot(unit_vector1, unit_vector2)
+    radians = np.arccos(cos_angle)
+    return np.rad2deg(radians)
 
 
 class SimpleEngine:

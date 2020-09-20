@@ -22,7 +22,7 @@ class SimplePositionSensor:
 
     def tick(self, dt):
         self.elapsed += dt
-        if self.elapsed >= self.period:
+        if self.elapsed > self.period:
             self.elapsed = 0
             self.contacts = [
                 Contact(measurement=np.array([boat.position[0], boat.position[1]]) + self.noise(),

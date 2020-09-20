@@ -1,6 +1,7 @@
 import numpy as np
 from copy import deepcopy
 
+from bumperboats.physics import vector_norm
 from bumperboats.track import SimpleSecondOrderKFTrack
 
 
@@ -25,19 +26,21 @@ class FakeAssociator:
 
 
 class SimpleAssociator:
-    def __init__(self, max_velocity, max_acceleration):
+    def __init__(self, max_velocity, max_acceleration,max_bearing_change):
         self.max_velocity = max_velocity
         self.max_acceleration = max_acceleration
+        self.max_bearing_change = max_bearing_change
         self.tracks = []
         self.prune_ctr = 0
+        self.tick_ctr = 0
 
     def print_track_actuals(self, spot):
-        tas = [t.actual_ids()+' '+str(t.velocity_norm())+' '+str(t.acceleration_norm()) for t in self.tracks]
-        if tas:
-            print(spot)
-            print('\n'.join(sorted(tas)))
+        print(spot)
+        for t in self.tracks:
+            print(t.actual_ids())
 
     def on_data(self, contacts):
+        self.tick_ctr += 1
         self.prune_ctr += 1
         if self.prune_ctr > 3:
             self.prune_ctr = 0
@@ -50,27 +53,19 @@ class SimpleAssociator:
             old_track.predict()
 
         for contact in contacts:
-            matches = []
-            best_residual_norm = 10000
+            matched = False
             for track in deepcopy(old_tracks):
                 track.on_data(contact)
-                if track.velocity_norm() < self.max_velocity and track.acceleration_norm() < self.max_acceleration:
-                    matches.append(track)
-                    residual_norm = np.linalg.norm(track.kf.y)
-                    best_residual_norm = min(best_residual_norm, residual_norm)
-                else:
-                    print('rejecting velocity', track.velocity_norm(), 'vs', self.max_velocity, 'acceleration', track.acceleration_norm(), 'vs', self.max_acceleration, 'ids', track.actual_ids())
+                if track.is_maneuver_possible():
+                    self.tracks.append(track)
+                    matched = True
 
-            if len(matches) > 0 and best_residual_norm < 20000:
-                for match in matches:
-                    if np.linalg.norm(match.kf.y) < best_residual_norm * 13:
-                        self.tracks.append(match)
-            else:
-                self.tracks.append(SimpleSecondOrderKFTrack(contact, dt=1, std=3))
+            if not matched:
+                self.tracks.append(SimpleSecondOrderKFTrack(contact, dt=1, std=5, max_velocity=self.max_velocity, max_acceleration=self.max_acceleration, max_bearing_change=self.max_bearing_change))
 
         print('\n----------')
-        print('len(contacts)', len(contacts), 'len(self.tracks)', len(self.tracks))
-        #self.print_track_actuals('onData')
+        print('tick', self.tick_ctr, 'len(contacts)', len(contacts), 'len(self.tracks)', len(self.tracks))
+        self.print_track_actuals('onData')
 
     def get_tracks(self):
         return self.tracks
@@ -84,7 +79,8 @@ class SimpleAssociator:
             for snapshot in old_track.snapshots:
                 if snapshot.mahalanobis > 3:
                     keep = False
-                    print('knock out mahalanobis ', snapshot.mahalanobis)
+                    if old_track.actually_consistent():
+                        print('knock out mahalanobis ', snapshot.mahalanobis, old_track.actual_ids)
 
             bad_count = 0
             for index, snapshot in enumerate(old_track.snapshots):
@@ -93,7 +89,8 @@ class SimpleAssociator:
 
             bad_count_ratio = bad_count/len(old_track.snapshots)
             if len(old_track.snapshots) > 8 and bad_count_ratio > 0.05:
-                print('knockout bad_count_ratio', bad_count_ratio, old_track.actual_ids())
+                if old_track.actually_consistent():
+                    print('knockout bad_count_ratio', bad_count_ratio, old_track.actual_ids())
                 keep = False
 
             if keep:
