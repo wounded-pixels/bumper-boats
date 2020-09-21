@@ -56,7 +56,8 @@ class SimpleSecondOrderKFTrack:
                                        mahalanobis=self.kf.mahalanobis,
                                        log_likelihood=self.kf.log_likelihood,
                                        actual=self.contact.actual,
-                                       actual_id=self.contact.actual_id)
+                                       actual_id=self.contact.actual_id,
+                                       elapsed=self.contact.elapsed)
                               )
 
     def predict(self):
@@ -72,7 +73,8 @@ class SimpleSecondOrderKFTrack:
                                        mahalanobis=self.kf.mahalanobis,
                                        log_likelihood=self.kf.log_likelihood,
                                        actual=self.contact.actual,
-                                       actual_id=self.contact.actual_id)
+                                       actual_id=self.contact.actual_id,
+                                       elapsed=self.contact.elapsed)
                               )
 
     def get_snapshots(self):
@@ -97,15 +99,21 @@ class SimpleSecondOrderKFTrack:
     def prior_prior_position(self):
         return self.snapshots[-3].estimate.T[0]
 
+    def elapsed(self):
+        return self.snapshots[-1].elapsed
+
+    def prior_elapsed(self):
+        return self.snapshots[-2].elapsed
+
     def velocity(self):
         if len(self.snapshots) > 1:
-            return (self.position() - self.prior_position()) / (self.dt * 2)
+            return (self.position() - self.prior_position()) / (self.elapsed() - self.prior_elapsed())
         else:
             return np.array([0.,0.])
 
     def prior_velocity(self):
         if len(self.snapshots) > 2:
-            return (self.prior_position() - self.prior_prior_position()) / (self.dt * 2)
+            return (self.prior_position() - self.prior_prior_position()) / (self.elapsed() - self.prior_elapsed())
         else:
             return np.array([0.,0.])
 

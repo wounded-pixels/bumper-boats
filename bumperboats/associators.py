@@ -37,7 +37,12 @@ class SimpleAssociator:
     def print_track_actuals(self, spot):
         print(spot)
         for t in self.tracks:
-            print(t.actual_ids())
+            if t.actually_consistent():
+                print('All', t.snapshots[-1].actual_id, 'velocity_norm', t.velocity_norm(), 'acceleration_norm', t.acceleration_norm())
+
+        for t in self.tracks:
+            if not t.actually_consistent():
+                print(t.actual_ids(), 'velocity_norm', t.velocity_norm(), 'acceleration_norm', t.acceleration_norm())
 
     def on_data(self, contacts):
         self.tick_ctr += 1
@@ -80,7 +85,7 @@ class SimpleAssociator:
                 if snapshot.mahalanobis > 3:
                     keep = False
                     if old_track.actually_consistent():
-                        print('knock out mahalanobis ', snapshot.mahalanobis, old_track.actual_ids)
+                        print('prune rejecting mahalanobis ', snapshot.mahalanobis, old_track.actual_ids)
 
             bad_count = 0
             for index, snapshot in enumerate(old_track.snapshots):
@@ -90,7 +95,7 @@ class SimpleAssociator:
             bad_count_ratio = bad_count/len(old_track.snapshots)
             if len(old_track.snapshots) > 8 and bad_count_ratio > 0.05:
                 if old_track.actually_consistent():
-                    print('knockout bad_count_ratio', bad_count_ratio, old_track.actual_ids())
+                    print('prune rejecting bad_count_ratio', bad_count_ratio, old_track.actual_ids())
                 keep = False
 
             if keep:

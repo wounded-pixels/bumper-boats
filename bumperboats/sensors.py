@@ -12,6 +12,7 @@ class SimplePositionSensor:
         self.max_value = max_value
         self.destinations = []
         self.elapsed = 0
+        self.since = 0
         self.contacts = []
 
     def add_destination(self, destination):
@@ -22,12 +23,14 @@ class SimplePositionSensor:
 
     def tick(self, dt):
         self.elapsed += dt
-        if self.elapsed > self.period:
-            self.elapsed = 0
+        self.since += dt
+        if self.since > self.period:
+            self.since = 0
             self.contacts = [
                 Contact(measurement=np.array([boat.position[0], boat.position[1]]) + self.noise(),
                         actual=np.array([boat.position[0], boat.position[1]]),
-                        actual_id=boat.id)
+                        actual_id=boat.id,
+                        elapsed=self.elapsed)
                 for boat, controller in self.engine.boats
                 if self.min_value < boat.position[0] < self.max_value and
                    self.min_value < boat.position[1] < self.max_value
