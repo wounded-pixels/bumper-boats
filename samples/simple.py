@@ -11,7 +11,7 @@ dt = 0.5
 max_steps = round(100/dt)
 
 fake_associator = FakeAssociator()
-associator = SimpleAssociator(max_velocity=15., max_acceleration=8., max_bearing_change=70)
+associator = SimpleAssociator(max_velocity=12., max_acceleration=12., max_bearing_change=70)
 engine = SimpleEngine()
 sensor = SimplePositionSensor(engine, std=3, period=2, min_value=-200)
 sensor.add_destination(associator)

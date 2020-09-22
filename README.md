@@ -13,5 +13,5 @@ Sandbox for experimenting with sensor simulation, track generation and associati
  [x] Basics for world physics    
  [x] Basic world viewer    
  [x] Basic filter driven associator    
- [ ] Handle dropped tracks - out of bounds or just stops
+ [ ] Handle dropped tracks - out of bounds or just stops    
  [ ] Better KF - water resistance in model

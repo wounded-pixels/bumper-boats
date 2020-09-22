@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.linalg import block_diag
+from itertools import count
 
 from filterpy.kalman import KalmanFilter
 import filterpy.common
@@ -9,6 +10,8 @@ from bumperboats.snapshot import Snapshot
 
 
 class SimpleSecondOrderKFTrack:
+    _ids = count(0)
+
     def __init__(self, contact, dt, std, max_velocity, max_acceleration, max_bearing_change):
         self.contact = contact
         self.dt = dt
@@ -17,17 +20,18 @@ class SimpleSecondOrderKFTrack:
         self.max_bearing_change = max_bearing_change
 
         self.snapshots = []
+        self.id = next(self._ids)
 
         self.kf = KalmanFilter(dim_x=6, dim_z=2)
 
         # state transition function
         self.kf.F = np.array([
-            [1, dt, 0.5*dt*dt, 0, 0, 0],
-            [0,  1, dt,        0, 0, 0],
-            [0,  0, 1,         0, 0, 0],
-            [0,  0, 0,         1, dt, 0.5*dt*dt],
-            [0,  0, 0,         0, 1,  dt],
-            [0,  0, 0,         0,  0, 1],
+            [1, dt, 0.5 * dt * dt, 0, 0, 0],
+            [0, 1, dt, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 1, dt, 0.5 * dt * dt],
+            [0, 0, 0, 0, 1, dt],
+            [0, 0, 0, 0, 0, 1],
         ])
 
         # Process noise
@@ -47,7 +51,7 @@ class SimpleSecondOrderKFTrack:
         self.kf.P = np.eye(6) * 500.
 
         # Measurement noise
-        self.kf.R = np.eye(2).dot(std*std)
+        self.kf.R = np.eye(2).dot(std * std)
 
         self.snapshots.append(Snapshot(state=self.kf.x,
                                        estimate=self.kf.H.dot(self.kf.x),
@@ -109,13 +113,13 @@ class SimpleSecondOrderKFTrack:
         if len(self.snapshots) > 1:
             return (self.position() - self.prior_position()) / (self.elapsed() - self.prior_elapsed())
         else:
-            return np.array([0.,0.])
+            return np.array([0., 0.])
 
     def prior_velocity(self):
         if len(self.snapshots) > 2:
             return (self.prior_position() - self.prior_prior_position()) / (self.elapsed() - self.prior_elapsed())
         else:
-            return np.array([0.,0.])
+            return np.array([0., 0.])
 
     def velocity_norm(self):
         return vector_norm(self.velocity())
@@ -135,14 +139,17 @@ class SimpleSecondOrderKFTrack:
                 print('rejecting velocity', self.velocity_norm(), '>', self.max_velocity, self.actual_ids())
             return False
 
-        if self.acceleration_norm() > self.max_acceleration:
+        if self.velocity_norm() > 3 and self.acceleration_norm() > self.max_acceleration:
             if self.actually_consistent():
-                print('rejecting acceleration', self.acceleration_norm(), '>', self.max_acceleration, self.actual_ids())
+                print('rejecting acceleration', self.acceleration_norm(), '>', self.max_acceleration,
+                      'velocity_norm', self.velocity_norm(), self.actual_ids())
             return False
 
-        if abs(self.bearing_change()) > self.max_bearing_change:
+        if self.velocity_norm() > 3 and abs(self.bearing_change()) > self.max_bearing_change:
             if self.actually_consistent():
-                print('rejecting bearing', self.bearing_change(), '>', self.max_bearing_change, 'position', self.position(), 'prior_position', self.prior_position(), 'velocity', self.velocity(), 'prior_velocity', self.prior_velocity(), self.actual_ids())
+                print('rejecting bearing', self.bearing_change(), '>', self.max_bearing_change, 'position',
+                      self.position(), 'prior_position', self.prior_position(), 'velocity_norm', self.velocity_norm(),
+                       self.actual_ids())
             return False
 
         return True
