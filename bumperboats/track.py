@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from scipy.linalg import block_diag
 from itertools import count
@@ -24,14 +26,16 @@ class SimpleSecondOrderKFTrack:
 
         self.kf = KalmanFilter(dim_x=6, dim_z=2)
 
+        rt = math.pi * 0.001
+
         # state transition function
         self.kf.F = np.array([
             [1, dt, 0.5 * dt * dt, 0, 0, 0],
             [0, 1, dt, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0],
+            [0, -rt, 1, 0, 0, 0],
             [0, 0, 0, 1, dt, 0.5 * dt * dt],
             [0, 0, 0, 0, 1, dt],
-            [0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, -rt, 1],
         ])
 
         # Process noise
@@ -57,6 +61,7 @@ class SimpleSecondOrderKFTrack:
                                        estimate=self.kf.H.dot(self.kf.x),
                                        measurement=self.contact.measurement,
                                        residual=self.kf.y,
+                                       covariance=self.kf.P,
                                        mahalanobis=self.kf.mahalanobis,
                                        log_likelihood=self.kf.log_likelihood,
                                        actual=self.contact.actual,
@@ -74,6 +79,7 @@ class SimpleSecondOrderKFTrack:
                                        estimate=self.kf.H.dot(self.kf.x),
                                        measurement=self.contact.measurement,
                                        residual=self.kf.y,
+                                       covariance=self.kf.P,
                                        mahalanobis=self.kf.mahalanobis,
                                        log_likelihood=self.kf.log_likelihood,
                                        actual=self.contact.actual,

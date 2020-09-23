@@ -46,8 +46,8 @@ class SimpleAssociator:
 
         for t in self.get_tracks():
             if not t.actually_consistent():
-                print(t.actual_ids(), 'velocity_norm', t.velocity_norm(), 'acceleration_norm', 'bearing change',
-                      t.bearing_change(), t.acceleration_norm())
+                print(t.actual_ids(), 'velocity_norm', t.velocity_norm(), 'bearing change',
+                      t.bearing_change(), 'acceleration_norm', t.acceleration_norm())
 
     def on_data(self, contacts):
         self.tick_ctr += 1

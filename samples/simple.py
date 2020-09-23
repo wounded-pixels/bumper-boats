@@ -3,9 +3,13 @@ import numpy as np
 from bumperboats.associators import SimpleAssociator, FakeAssociator
 from bumperboats.boat import Boat
 from bumperboats.controllers import FixedController, OscillatingController
-from bumperboats.physics import SimpleEngine
+from bumperboats.physics import SimpleEngine, vector_norm
 from bumperboats.sensors import SimplePositionSensor
 from bumperboats.viewer import PlotViewer
+
+def EE(actual, estimate):
+    est_err = actual - estimate
+    return vector_norm(est_err)
 
 dt = 0.5
 max_steps = round(100/dt)
@@ -35,4 +39,12 @@ for ctr in range(max_steps):
     if ctr > 0 and ctr % 20 == 0 or ctr == max_steps-1:
         associator.prune()
         viewer.show(title='ctr: '+str(ctr))
+
+overall_ees = []
+for track in associator.get_tracks():
+    ees = [EE(snapshot.actual, snapshot.estimate.T) for snapshot in track.snapshots]
+    overall_ees = [*overall_ees, *ees]
+    print('ids', track.actual_ids(), 'mean_nees', np.mean(ees))
+
+print('overall mean ees', np.mean(overall_ees))
 
