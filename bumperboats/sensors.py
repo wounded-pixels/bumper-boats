@@ -24,11 +24,11 @@ class SimplePositionSensor:
     def tick(self, dt):
         self.elapsed += dt
         self.since += dt
-        if self.since > self.period:
-            self.since = 0
+        if self.since >= self.period:
             self.contacts = [
                 Contact(measurement=np.array([boat.position[0], boat.position[1]]) + self.noise(),
-                        actual=np.array([boat.position[0], boat.position[1]]),
+                        actual_position=np.array([boat.position[0], boat.position[1]]),
+                        actual_state=np.array([boat.position[0], boat.velocity[0], boat.acceleration[0],boat.position[1], boat.velocity[1], boat.acceleration[1]]),
                         actual_id=boat.id,
                         elapsed=self.elapsed)
                 for boat, controller in self.engine.boats
@@ -37,4 +37,6 @@ class SimplePositionSensor:
             ]
 
             for destination in self.destinations:
-                destination.on_data(contacts=self.contacts)
+                destination.on_data(contacts=self.contacts, dt=self.since)
+
+            self.since = 0

@@ -3,37 +3,16 @@ from copy import deepcopy
 from bumperboats.track import SimpleSecondOrderKFTrack
 
 
-class FakeAssociator:
-    def __init__(self):
-        self.track_map = {}
-
-    def on_data(self, contacts):
-        for track in self.get_tracks():
-            track.predict()
-
-        for contact in contacts:
-            track = self.track_map.setdefault(contact.actual_id,
-                                              SimpleSecondOrderKFTrack(contact, dt=1, std=3,
-                                                                       max_velocity=100,
-                                                                       max_acceleration=100,
-                                                                       max_bearing_change=100))
-            track.on_data(contact)
-
-    def get_tracks(self):
-        return [track for _, track in self.track_map.items()]
-
-    def print_diagnostics(self):
-        for track in self.get_tracks():
-            track.print_diagnostics()
-
-
 class SimpleAssociator:
-    def __init__(self, max_velocity, max_acceleration,max_bearing_change):
+    def __init__(self, std, max_velocity, max_acceleration,max_bearing_change, resistance_coefficient=0.0314):
+        self.std = std
         self.max_velocity = max_velocity
         self.max_acceleration = max_acceleration
         self.max_bearing_change = max_bearing_change
+        self.resistance_coefficient = resistance_coefficient
         self.tracks = []
         self.dead_tracks = []
+        self.pruned_tracks = []
         self.prune_ctr = 0
         self.tick_ctr = 0
 
@@ -42,14 +21,14 @@ class SimpleAssociator:
         for t in self.get_tracks():
             if t.actually_consistent():
                 print('All', t.snapshots[-1].actual_id, 'x', len(t.snapshots), 'velocity_norm', t.velocity_norm(),
-                      'acceleration_norm', t.acceleration_norm(), 'bearing change', t.bearing_change())
+                      'acceleration_norm', t.acceleration_norm(), 'bearing change', t.bearing_change(), 'mean NEES', t.mean_NEES())
 
         for t in self.get_tracks():
             if not t.actually_consistent():
                 print(t.actual_ids(), 'velocity_norm', t.velocity_norm(), 'bearing change',
-                      t.bearing_change(), 'acceleration_norm', t.acceleration_norm())
+                      t.bearing_change(), 'acceleration_norm', t.acceleration_norm(), 'mean NEES', t.mean_NEES())
 
-    def on_data(self, contacts):
+    def on_data(self, contacts, dt):
         self.tick_ctr += 1
         self.prune_ctr += 1
         if self.prune_ctr > 3:
@@ -74,7 +53,13 @@ class SimpleAssociator:
                         dead_track_ids.remove(track.id)
 
             if not matched:
-                self.tracks.append(SimpleSecondOrderKFTrack(contact, dt=1, std=5, max_velocity=self.max_velocity, max_acceleration=self.max_acceleration, max_bearing_change=self.max_bearing_change))
+                self.tracks.append(SimpleSecondOrderKFTrack(contact,
+                                                            dt=dt,
+                                                            std=self.std,
+                                                            max_velocity=self.max_velocity,
+                                                            max_acceleration=self.max_acceleration,
+                                                            max_bearing_change=self.max_bearing_change,
+                                                            resistance_coefficient=self.resistance_coefficient))
 
         # inefficient but n should be small...
         for dead_track_id in dead_track_ids:
@@ -87,7 +72,7 @@ class SimpleAssociator:
         self.print_track_actuals('onData')
 
     def get_tracks(self):
-        return [*self.tracks, *self.dead_tracks]
+        return [*self.tracks, *self.dead_tracks, *self.pruned_tracks]
 
     def prune(self):
         old_tracks = self.tracks
@@ -99,7 +84,7 @@ class SimpleAssociator:
                 if snapshot.mahalanobis > 3:
                     keep = False
                     if old_track.actually_consistent():
-                        print('prune rejecting mahalanobis ', snapshot.mahalanobis, old_track.actual_ids)
+                        print('prune rejecting mahalanobis ', snapshot.mahalanobis, old_track.actual_ids())
 
             bad_count = 0
             for index, snapshot in enumerate(old_track.snapshots):
@@ -114,5 +99,7 @@ class SimpleAssociator:
 
             if keep:
                 self.tracks.append(old_track)
+            else:
+                self.pruned_tracks.append(old_track)
 
         self.print_track_actuals('prune')

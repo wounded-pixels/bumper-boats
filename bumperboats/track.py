@@ -7,6 +7,7 @@ from itertools import count
 from filterpy.kalman import KalmanFilter
 import filterpy.common
 
+from bumperboats.metrics import NEES
 from bumperboats.physics import vector_norm, degrees_between
 from bumperboats.snapshot import Snapshot
 
@@ -14,32 +15,34 @@ from bumperboats.snapshot import Snapshot
 class SimpleSecondOrderKFTrack:
     _ids = count(0)
 
-    def __init__(self, contact, dt, std, max_velocity, max_acceleration, max_bearing_change):
+    def __init__(self, contact, dt, std, max_velocity, max_acceleration, max_bearing_change, resistance_coefficient=0.0314):
         self.contact = contact
         self.dt = dt
         self.max_velocity = max_velocity
         self.max_acceleration = max_acceleration
         self.max_bearing_change = max_bearing_change
 
+        self.test_bearing = False
+
         self.snapshots = []
         self.id = next(self._ids)
 
         self.kf = KalmanFilter(dim_x=6, dim_z=2)
 
-        rt = math.pi * 0.001
+        water_resistance = -1 * math.pi * 1. * resistance_coefficient
 
         # state transition function
         self.kf.F = np.array([
             [1, dt, 0.5 * dt * dt, 0, 0, 0],
             [0, 1, dt, 0, 0, 0],
-            [0, -rt, 1, 0, 0, 0],
+            [0, water_resistance, 1, 0, 0, 0],
             [0, 0, 0, 1, dt, 0.5 * dt * dt],
             [0, 0, 0, 0, 1, dt],
-            [0, 0, 0, 0, -rt, 1],
+            [0, 0, 0, 0, water_resistance, 1],
         ])
 
         # Process noise
-        q = filterpy.common.Q_discrete_white_noise(dim=3, dt=dt, var=1.5)
+        q = filterpy.common.Q_discrete_white_noise(dim=3, dt=dt, var=.3)
         self.kf.Q = block_diag(q, q)
 
         # measurement matrix state -> measurement space
@@ -58,13 +61,14 @@ class SimpleSecondOrderKFTrack:
         self.kf.R = np.eye(2).dot(std * std)
 
         self.snapshots.append(Snapshot(state=self.kf.x,
-                                       estimate=self.kf.H.dot(self.kf.x),
+                                       actual_state=self.contact.actual_state,
+                                       estimated_position=self.kf.H.dot(self.kf.x),
                                        measurement=self.contact.measurement,
                                        residual=self.kf.y,
                                        covariance=self.kf.P,
                                        mahalanobis=self.kf.mahalanobis,
                                        log_likelihood=self.kf.log_likelihood,
-                                       actual=self.contact.actual,
+                                       actual_position=self.contact.actual_position,
                                        actual_id=self.contact.actual_id,
                                        elapsed=self.contact.elapsed)
                               )
@@ -76,13 +80,14 @@ class SimpleSecondOrderKFTrack:
         self.contact = contact
         self.kf.update(contact.measurement)
         self.snapshots.append(Snapshot(state=self.kf.x,
-                                       estimate=self.kf.H.dot(self.kf.x),
+                                       actual_state=self.contact.actual_state,
+                                       estimated_position=self.kf.H.dot(self.kf.x),
                                        measurement=self.contact.measurement,
                                        residual=self.kf.y,
                                        covariance=self.kf.P,
                                        mahalanobis=self.kf.mahalanobis,
                                        log_likelihood=self.kf.log_likelihood,
-                                       actual=self.contact.actual,
+                                       actual_position=self.contact.actual_position,
                                        actual_id=self.contact.actual_id,
                                        elapsed=self.contact.elapsed)
                               )
@@ -101,13 +106,13 @@ class SimpleSecondOrderKFTrack:
         return np.amin(ids) == np.amax(ids)
 
     def position(self):
-        return self.snapshots[-1].estimate.T[0]
+        return self.snapshots[-1].estimated_position.T[0]
 
     def prior_position(self):
-        return self.snapshots[-2].estimate.T[0]
+        return self.snapshots[-2].estimated_position.T[0]
 
     def prior_prior_position(self):
-        return self.snapshots[-3].estimate.T[0]
+        return self.snapshots[-3].estimated_position.T[0]
 
     def elapsed(self):
         return self.snapshots[-1].elapsed
@@ -151,11 +156,17 @@ class SimpleSecondOrderKFTrack:
                       'velocity_norm', self.velocity_norm(), self.actual_ids())
             return False
 
-        if self.velocity_norm() > 3 and abs(self.bearing_change()) > self.max_bearing_change:
+        if self.test_bearing and self.velocity_norm() > 3 and abs(self.bearing_change()) > self.max_bearing_change:
             if self.actually_consistent():
                 print('rejecting bearing', self.bearing_change(), '>', self.max_bearing_change, 'position',
                       self.position(), 'prior_position', self.prior_position(), 'velocity_norm', self.velocity_norm(),
-                       self.actual_ids())
+                      self.actual_ids())
             return False
 
         return True
+
+    def calculate_NEES_list(self):
+        return [NEES(snapshot) for snapshot in self.snapshots]
+
+    def mean_NEES(self):
+        return np.mean(self.calculate_NEES_list())

@@ -22,18 +22,18 @@ class PlotViewer:
             er_xs = []
             er_ys = []
             for snapshot in track.get_snapshots():
-                xs.append(snapshot.actual[0])
-                ys.append(snapshot.actual[1])
+                xs.append(snapshot.actual_position[0])
+                ys.append(snapshot.actual_position[1])
 
                 mxs.append(snapshot.measurement[0])
                 mys.append(snapshot.measurement[1])
-                mr_xs.append(snapshot.measurement[0] - snapshot.actual[0])
-                mr_ys.append(snapshot.measurement[1] - snapshot.actual[1])
+                mr_xs.append(snapshot.measurement[0] - snapshot.actual_position[0])
+                mr_ys.append(snapshot.measurement[1] - snapshot.actual_position[1])
 
-                exs.append(snapshot.estimate[0])
-                eys.append(snapshot.estimate[1])
-                er_xs.append(snapshot.estimate[0] - snapshot.actual[0])
-                er_ys.append(snapshot.estimate[1] - snapshot.actual[1])
+                exs.append(snapshot.estimated_position[0])
+                eys.append(snapshot.estimated_position[1])
+                er_xs.append(snapshot.estimated_position[0] - snapshot.actual_position[0])
+                er_ys.append(snapshot.estimated_position[1] - snapshot.actual_position[1])
 
             self.position_ax.plot(xs, ys, c='blue')
             self.position_ax.plot(mxs, mys, '.', c='red')

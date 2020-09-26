@@ -1,23 +1,19 @@
 import numpy as np
 
-from bumperboats.associators import SimpleAssociator, FakeAssociator
+from bumperboats.associators import SimpleAssociator
 from bumperboats.boat import Boat
 from bumperboats.controllers import FixedController, OscillatingController
-from bumperboats.physics import SimpleEngine, vector_norm
+from bumperboats.physics import SimpleEngine
 from bumperboats.sensors import SimplePositionSensor
 from bumperboats.viewer import PlotViewer
 
-def EE(actual, estimate):
-    est_err = actual - estimate
-    return vector_norm(est_err)
-
 dt = 0.5
+measurement_std = 1
 max_steps = round(100/dt)
 
-fake_associator = FakeAssociator()
-associator = SimpleAssociator(max_velocity=12., max_acceleration=12., max_bearing_change=70)
+associator = SimpleAssociator(std=measurement_std * 1.1, max_velocity=12., max_acceleration=12., max_bearing_change=70)
 engine = SimpleEngine()
-sensor = SimplePositionSensor(engine, std=3, period=2, min_value=-200)
+sensor = SimplePositionSensor(engine, std=measurement_std, period=0.5, min_value=-200)
 sensor.add_destination(associator)
 viewer = PlotViewer(engine, sensor, associator)
 
@@ -40,11 +36,11 @@ for ctr in range(max_steps):
         associator.prune()
         viewer.show(title='ctr: '+str(ctr))
 
-overall_ees = []
+overall_nees = []
 for track in associator.get_tracks():
-    ees = [EE(snapshot.actual, snapshot.estimate.T) for snapshot in track.snapshots]
-    overall_ees = [*overall_ees, *ees]
-    print('ids', track.actual_ids(), 'mean_nees', np.mean(ees))
+    NEES_list = track.calculate_NEES_list()
+    overall_NEES = [*overall_nees, *NEES_list]
+    print('ids', track.actual_ids(), 'mean_nees', np.mean(NEES_list))
 
-print('overall mean ees', np.mean(overall_ees))
+print('overall mean NEES', np.mean(overall_NEES))
 
